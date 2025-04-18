@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Post } from '@/types';
-import connectDB from '@/lib/mongodb';
+import connectDB from '@/lib/mongoose';
 import PostModel from '@/models/Post';
 
 async function getEditorsPicks(): Promise<Post[]> {
