@@ -5,7 +5,6 @@ export interface IBlog extends Document {
   slug: string;
   excerpt: string;
   content: string;
-  markdownPath: string;
   author: string;
   coverImage: string;
   images: string[];
@@ -22,7 +21,6 @@ const BlogSchema: Schema = new Schema({
   slug: { type: String, required: true, unique: true, trim: true },
   excerpt: { type: String, required: true },
   content: { type: String, required: true },
-  markdownPath: { type: String, required: true }, // Path to the markdown file
   author: { type: String, required: true },
   coverImage: { type: String, default: '' },
   images: [{ type: String }],

@@ -6,7 +6,6 @@ import { FaCalendar, FaTag, FaUser } from 'react-icons/fa';
 import dbConnect from '@/lib/mongoose';
 import Blog from '@/models/Blog';
 import Comment from '@/models/Comment';
-import { getMarkdownBySlug, parseMarkdown } from '@/lib/markdown';
 import LikeButton from '@/components/LikeButton';
 import CommentComponent from '@/components/Comment';
 import CommentFormWrapper from './CommentFormWrapper';
@@ -18,7 +17,6 @@ interface BlogDocument {
   slug: string;
   excerpt: string;
   content: string;
-  htmlContent: string;
   author: string;
   coverImage: string;
   publishedAt: string;
@@ -26,13 +24,6 @@ interface BlogDocument {
   featured: boolean;
   likes: number;
   tags: string[];
-}
-
-interface CommentDocument {
-  _id: string;
-  name: string;
-  content: string;
-  createdAt: string;
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
@@ -69,12 +60,6 @@ async function getBlogBySlug(slug: string) {
     return null;
   }
   
-  const markdownContent = await getMarkdownBySlug(slug);
-  
-  if (!markdownContent) {
-    return null;
-  }
-  
   const comments = await Comment.find({ 
     blog: (blog as any)._id,
     approved: true 
@@ -83,11 +68,7 @@ async function getBlogBySlug(slug: string) {
     .lean();
   
   return {
-    blog: {
-      ...JSON.parse(JSON.stringify(blog)),
-      content: markdownContent.content,
-      htmlContent: parseMarkdown(markdownContent.content)
-    },
+    blog: JSON.parse(JSON.stringify(blog)),
     comments: JSON.parse(JSON.stringify(comments))
   };
 }
@@ -139,48 +120,39 @@ export default async function BlogDetailPage({ params }: { params: { slug: strin
           </div>
           
           {blog.coverImage && (
-            <div className="relative h-64 md:h-96 w-full rounded-lg overflow-hidden mb-8">
-              <Image 
+            <div className="relative w-full h-96 mb-8">
+              <Image
                 src={blog.coverImage}
                 alt={blog.title}
                 fill
-                className="object-cover"
+                className="object-cover rounded-lg"
+                priority
               />
             </div>
           )}
         </header>
         
         {/* Blog Content */}
-        <article className="prose prose-lg max-w-none prose-blue mb-12">
-          <div dangerouslySetInnerHTML={{ __html: blog.htmlContent }} />
+        <article className="prose prose-lg max-w-none mb-12">
+          <div dangerouslySetInnerHTML={{ __html: blog.content }} />
         </article>
         
-        {/* Like and Share */}
-        <div className="flex items-center justify-between border-t border-b border-gray-200 py-4 mb-8">
-          <div className="flex items-center">
-            <span className="text-gray-700 mr-4">Like this post</span>
-            <LikeButton slug={blog.slug} initialLikes={blog.likes} />
-          </div>
-          {/* Share functionality can be added here */}
+        {/* Like Button */}
+        <div className="mb-12">
+          <LikeButton blogId={blog._id} initialLikes={blog.likes} />
         </div>
         
         {/* Comments Section */}
-        <section>
-          <h3 className="text-2xl font-bold mb-6">Comments ({comments.length})</h3>
-          
-          {comments.length > 0 ? (
-            <div className="space-y-6 mb-8">
-              {comments.map((comment: CommentDocument) => (
-                <CommentComponent key={comment._id} comment={comment} />
-              ))}
-            </div>
-          ) : (
-            <div className="bg-gray-50 p-6 rounded-lg mb-8 text-center">
-              <p className="text-gray-600">No comments yet. Be the first to leave a comment!</p>
-            </div>
-          )}
+        <section className="border-t pt-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Comments</h2>
           
           <CommentFormWrapper blogId={blog._id} />
+          
+          <div className="mt-8 space-y-6">
+            {comments.map((comment: any) => (
+              <CommentComponent key={comment._id} comment={comment} />
+            ))}
+          </div>
         </section>
       </div>
     </div>

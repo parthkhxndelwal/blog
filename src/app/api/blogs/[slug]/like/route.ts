@@ -8,24 +8,22 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const slug = params.slug;
+    const blogId = params.slug;
     
     await dbConnect();
     
-    // Find the blog
-    const blog = await Blog.findOne({ slug });
+    const blog = await Blog.findByIdAndUpdate(
+      blogId,
+      { $inc: { likes: 1 } },
+      { new: true }
+    );
+    
     if (!blog) {
       return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
     }
     
-    // Increment likes
-    blog.likes = (blog.likes || 0) + 1;
-    await blog.save();
+    return NextResponse.json({ likes: blog.likes });
     
-    return NextResponse.json({
-      success: true,
-      likes: blog.likes
-    });
   } catch (error: any) {
     console.error('Error liking blog:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface LikeButtonProps {
-  slug: string;
+  blogId: string;
   initialLikes: number;
 }
 
-export default function LikeButton({ slug, initialLikes }: LikeButtonProps) {
+export default function LikeButton({ blogId, initialLikes }: LikeButtonProps) {
   const [likes, setLikes] = useState(initialLikes);
   const [hasLiked, setHasLiked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +22,7 @@ export default function LikeButton({ slug, initialLikes }: LikeButtonProps) {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`/api/blogs/${slug}/like`, {
+      const response = await fetch(`/api/blogs/${blogId}/like`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -35,7 +35,7 @@ export default function LikeButton({ slug, initialLikes }: LikeButtonProps) {
         setLikes(data.likes);
         setHasLiked(true);
         // Save liked state to localStorage to prevent multiple likes
-        localStorage.setItem(`liked_${slug}`, 'true');
+        localStorage.setItem(`liked_${blogId}`, 'true');
       }
     } catch (error) {
       console.error('Error liking post:', error);
@@ -47,10 +47,10 @@ export default function LikeButton({ slug, initialLikes }: LikeButtonProps) {
   // Check localStorage on component mount (client-side only)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const hasLikedFromStorage = localStorage.getItem(`liked_${slug}`) === 'true';
+      const hasLikedFromStorage = localStorage.getItem(`liked_${blogId}`) === 'true';
       setHasLiked(hasLikedFromStorage);
     }
-  }, [slug]);
+  }, [blogId]);
   
   return (
     <Button

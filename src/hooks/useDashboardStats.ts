@@ -60,4 +60,4 @@ export const useDashboardStats = () => {
   }, []);
 
   return { stats, loading, error };
-}; 
+};

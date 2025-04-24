@@ -2,8 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FaEdit, FaTrash, FaPlus, FaSearch, FaStar } from 'react-icons/fa';
 import { format } from 'date-fns';
+import { FaEdit, FaTrash, FaPlus, FaSearch, FaStar } from 'react-icons/fa';
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Blog {
   _id: string;
@@ -91,201 +98,183 @@ export default function AdminBlogsPage() {
   );
   
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          {filter === 'featured' ? 'Featured Blogs' : 'All Blogs'}
-        </h1>
-        
-        <Link
-          href="/admin/blogs/new"
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
-        >
-          <FaPlus className="mr-2" />
-          New Blog
-        </Link>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Blogs</h1>
+        <Button asChild>
+          <Link href="/admin/blogs/new">
+            <FaPlus className="mr-2 h-4 w-4" />
+            New Blog
+          </Link>
+        </Button>
       </div>
       
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <div className="p-4 border-b">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaSearch className="text-gray-400" />
+      <Card>
+        <CardHeader>
+          <CardTitle>Manage Blogs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search blogs..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-[300px]"
+                />
               </div>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search blogs..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
-            </div>
-            
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setFilter('all')}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${
-                  filter === 'all'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                All Blogs
-              </button>
-              <button
-                onClick={() => setFilter('featured')}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${
-                  filter === 'featured'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Featured
-              </button>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant={filter === 'all' ? 'default' : 'outline'}
+                  onClick={() => setFilter('all')}
+                >
+                  All
+                </Button>
+                <Button
+                  variant={filter === 'featured' ? 'default' : 'outline'}
+                  onClick={() => setFilter('featured')}
+                >
+                  Featured
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-        
-        {isLoading ? (
-          <div className="p-8 text-center">
-            <p className="text-gray-500">Loading blogs...</p>
-          </div>
-        ) : error ? (
-          <div className="p-8 text-center">
-            <p className="text-red-500">{error}</p>
-          </div>
-        ) : filteredBlogs.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-gray-500">
-              {searchTerm
-                ? 'No blogs match your search'
-                : filter === 'featured'
-                ? 'No featured blogs found'
-                : 'No blogs found'}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Blog
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Author
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Published
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredBlogs.map((blog) => (
-                  <tr key={blog._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
+          
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Author</TableHead>
+                  <TableHead>Published</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <>
+                    <TableRow>
+                      <TableCell><Skeleton className="h-4 w-[250px]" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-4 w-[100px] ml-auto" /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><Skeleton className="h-4 w-[250px]" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-4 w-[100px] ml-auto" /></TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><Skeleton className="h-4 w-[250px]" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-4 w-[100px] ml-auto" /></TableCell>
+                    </TableRow>
+                  </>
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-destructive">
+                      {error}
+                    </TableCell>
+                  </TableRow>
+                ) : filteredBlogs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                      {searchTerm
+                        ? 'No blogs match your search'
+                        : filter === 'featured'
+                        ? 'No featured blogs found'
+                        : 'No blogs found'}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredBlogs.map((blog) => (
+                    <TableRow key={blog._id}>
+                      <TableCell>
                         <div>
                           <Link
                             href={`/admin/blogs/${blog.slug}/edit`}
-                            className="text-sm font-medium text-gray-900 hover:text-blue-600"
+                            className="font-medium hover:underline"
                           >
                             {blog.title}
                           </Link>
-                          <div className="text-sm text-gray-500 truncate max-w-xs">
+                          <p className="text-sm text-muted-foreground truncate max-w-xs">
                             {blog.excerpt}
-                          </div>
+                          </p>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {blog.author}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {format(new Date(blog.publishedAt), 'MMM d, yyyy')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {blog.featured && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                          <FaStar className="mr-1" />
-                          Featured
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <Link
-                          href={`/blogs/${blog.slug}`}
-                          className="text-blue-600 hover:text-blue-900"
-                          target="_blank"
-                        >
-                          View
-                        </Link>
-                        <Link
-                          href={`/admin/blogs/${blog.slug}/edit`}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          <FaEdit />
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(blog._id, blog.title)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <FaTrash />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </TableCell>
+                      <TableCell>{blog.author}</TableCell>
+                      <TableCell>{format(new Date(blog.publishedAt), 'MMM d, yyyy')}</TableCell>
+                      <TableCell>
+                        {blog.featured && (
+                          <Badge variant="secondary">
+                            <FaStar className="mr-1 h-3 w-3" />
+                            Featured
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            asChild
+                          >
+                            <Link href={`/admin/blogs/${blog.slug}/edit`}>
+                              <FaEdit className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(blog._id, blog.title)}
+                          >
+                            <FaTrash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
-        )}
-        
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="flex-1 flex justify-between">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <div className="hidden md:flex">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                      currentPage === page
-                        ? 'bg-blue-50 text-blue-700 border-blue-500'
-                        : 'text-gray-700 bg-white hover:bg-gray-50'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
+          
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-6">
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
               </div>
-              <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 } 

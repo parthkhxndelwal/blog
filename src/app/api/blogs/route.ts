@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongoose';
 import Blog from '@/models/Blog';
-import { saveMarkdownContent, getMarkdownBySlug } from '@/lib/markdown';
 import { z } from 'zod';
 
 // Schema for blog validation
@@ -41,17 +40,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
       }
 
-      // Get markdown content
-      const markdownContent = await getMarkdownBySlug(slug);
-      
-      if (!markdownContent) {
-        return NextResponse.json({ error: 'Blog content not found' }, { status: 404 });
-      }
-
-      return NextResponse.json({ 
-        ...blog.toObject(), 
-        content: markdownContent.content 
-      });
+      return NextResponse.json(blog);
     }
 
     // Filter by tag if provided
@@ -91,57 +80,18 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    // Validate blog data
-    const validation = blogSchema.safeParse(body);
-    if (!validation.success) {
-      return NextResponse.json({ 
-        error: 'Invalid blog data', 
-        details: validation.error.format() 
-      }, { status: 400 });
-    }
-
-    await dbConnect();
-
-    // Generate slug from title
-    const slug = body.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-
-    // Check if slug already exists
-    const existingBlog = await Blog.findOne({ slug });
-    if (existingBlog) {
-      return NextResponse.json({ error: 'A blog with this title already exists' }, { status: 400 });
-    }
-
-    // Save markdown content
-    const markdownData = {
-      title: body.title,
-      excerpt: body.excerpt,
-      author: body.author,
-      coverImage: body.coverImage || '',
-      date: new Date().toISOString(),
-      tags: body.tags || [],
-      featured: body.featured || false
-    };
+    // Validate request body
+    const validatedData = blogSchema.parse(body);
     
-    await saveMarkdownContent(slug, markdownData, body.content);
-
-    // Create blog in MongoDB
-    const blog = new Blog({
-      title: body.title,
-      slug,
-      excerpt: body.excerpt,
-      content: body.content.substring(0, 200), // Store a preview
-      markdownPath: `content/blogs/${slug}.md`,
-      author: body.author,
-      coverImage: body.coverImage || '',
-      images: body.images || [],
-      tags: body.tags || [],
-      featured: body.featured || false
+    await dbConnect();
+    
+    // Create new blog
+    const blog = await Blog.create({
+      ...validatedData,
+      slug: validatedData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      publishedAt: new Date()
     });
-
-    await blog.save();
+    
     return NextResponse.json(blog, { status: 201 });
   } catch (error: any) {
     console.error('Error creating blog:', error);

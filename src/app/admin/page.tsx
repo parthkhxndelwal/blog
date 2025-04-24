@@ -93,8 +93,8 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+          <div className="flex items-center justify-between">
+            <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
             Overview of your blog performance and recent activity
@@ -156,7 +156,7 @@ export default function AdminDashboard() {
                 <Button asChild variant="link" size="sm" className="p-0 h-auto">
                   <Link href="/admin/blogs?featured=true">
                     View featured <ChevronRight className="h-3 w-3 ml-1" />
-                  </Link>
+            </Link>
                 </Button>
               </CardFooter>
             </Card>
@@ -171,7 +171,7 @@ export default function AdminDashboard() {
                 <div className="flex items-center gap-2">
                   <MessageSquare className="h-5 w-5 text-green-500" />
                   <span className="text-2xl font-bold">{stats?.totalComments || 0}</span>
-                </div>
+                  </div>
               </CardContent>
               <CardFooter className="pt-2">
                 <Button asChild variant="link" size="sm" className="p-0 h-auto">
@@ -204,7 +204,7 @@ export default function AdminDashboard() {
             </Card>
           </>
         )}
-      </div>
+            </div>
       
       <Tabs defaultValue="blogs" className="mt-8">
         <TabsList>
@@ -306,8 +306,8 @@ export default function AdminDashboard() {
                             <div className="space-y-1">
                               <p className="font-medium leading-none">{comment.name || 'Anonymous'}</p>
                               <p className="text-sm text-muted-foreground line-clamp-1">{comment.content}</p>
-                            </div>
-                          </div>
+          </div>
+        </div>
                         </TableCell>
                         <TableCell>
                           <Link href={`/admin/blogs/${comment.blog?.slug}`} className="text-sm hover:underline">

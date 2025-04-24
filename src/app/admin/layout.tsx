@@ -73,8 +73,8 @@ export default function AdminLayout({
             <div className="space-y-1 p-4">
               <div className="flex h-10 items-center gap-2 font-semibold">
                 <LayoutDashboard className="h-5 w-5" />
-                <span>Admin Dashboard</span>
-              </div>
+            <span>Admin Dashboard</span>
+          </div>
             </div>
             <Separator />
             <ScrollArea className="h-[calc(100vh-8rem)]">
@@ -91,7 +91,7 @@ export default function AdminLayout({
                   ))}
                   <Separator className="my-2" />
                   <NavItem
-                    href="/"
+                href="/" 
                     label="View Blog"
                     icon={<ExternalLink className="h-4 w-4" />}
                   />
@@ -114,7 +114,7 @@ export default function AdminLayout({
                 <Link href={item.href}>
                   {item.icon}
                   <span className="sr-only">{item.label}</span>
-                </Link>
+              </Link>
               </Button>
             ))}
           </nav>
@@ -127,7 +127,7 @@ export default function AdminLayout({
           <div className="flex h-10 items-center gap-2 font-semibold">
             <LayoutDashboard className="h-5 w-5" />
             <span>Admin Dashboard</span>
-          </div>
+            </div>
           <Separator className="my-4" />
           <div className="flex-1">
             <nav className="grid gap-1 px-2 py-2">
@@ -141,7 +141,7 @@ export default function AdminLayout({
                 />
               ))}
             </nav>
-          </div>
+            </div>
           <Separator className="my-4" />
           <div className="px-2">
             <NavItem
@@ -151,11 +151,11 @@ export default function AdminLayout({
             />
           </div>
         </nav>
-
+        
         {/* Main Content */}
         <main className="flex-1 overflow-auto p-4 md:p-6">
-          {children}
-        </main>
+            {children}
+          </main>
       </div>
     </div>
   );

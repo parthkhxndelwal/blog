@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongoose';
 import Blog from '@/models/Blog';
 import Comment from '@/models/Comment';
-import { saveMarkdownContent, getMarkdownBySlug, deleteMarkdownContent } from '@/lib/markdown';
 import { z } from 'zod';
 
 const updateBlogSchema = z.object({
@@ -37,18 +36,7 @@ export async function GET(
       return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
     }
 
-    // Get markdown content
-    const markdownContent = await getMarkdownBySlug(slug);
-    
-    if (!markdownContent) {
-      return NextResponse.json({ error: 'Blog content not found' }, { status: 404 });
-    }
-
-    // Return combined data
-    return NextResponse.json({
-      ...blog.toObject(),
-      content: markdownContent.content
-    });
+    return NextResponse.json(blog);
     
   } catch (error: any) {
     console.error('Error fetching blog:', error);
@@ -56,8 +44,8 @@ export async function GET(
   }
 }
 
-// PUT to update a blog
-export async function PUT(
+// UPDATE a blog
+export async function PATCH(
   request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
@@ -65,63 +53,25 @@ export async function PUT(
     const slug = params.slug;
     const body = await request.json();
     
-    // Validate update data
-    const validation = updateBlogSchema.safeParse(body);
-    if (!validation.success) {
-      return NextResponse.json({ 
-        error: 'Invalid blog data', 
-        details: validation.error.format() 
-      }, { status: 400 });
-    }
-
+    // Validate request body
+    const validatedData = updateBlogSchema.parse(body);
+    
     await dbConnect();
     
-    // Find the blog
-    const blog = await Blog.findOne({ slug });
+    // Find and update blog
+    const blog = await Blog.findOneAndUpdate(
+      { slug },
+      { 
+        ...validatedData,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+    
     if (!blog) {
       return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
     }
-
-    // Get current markdown content to preserve it if not updating content
-    const currentMarkdown = await getMarkdownBySlug(slug);
-    if (!currentMarkdown && !body.content) {
-      return NextResponse.json({ error: 'Blog content not found' }, { status: 404 });
-    }
-
-    // Update fields if provided
-    if (body.title) blog.title = body.title;
-    if (body.excerpt) blog.excerpt = body.excerpt;
-    if (body.author) blog.author = body.author;
-    if (body.coverImage !== undefined) blog.coverImage = body.coverImage;
-    if (body.tags) blog.tags = body.tags;
-    if (body.featured !== undefined) blog.featured = body.featured;
-    if (body.images) blog.images = body.images;
     
-    // Content preview (first 200 chars) if content is updated
-    if (body.content) {
-      blog.content = body.content.substring(0, 200);
-    }
-    
-    blog.updatedAt = new Date();
-    
-    // If there's new content, update the markdown file
-    if (body.content || body.title || body.tags || body.excerpt || body.coverImage !== undefined || body.featured !== undefined) {
-      const markdownData = {
-        title: blog.title,
-        excerpt: blog.excerpt,
-        author: blog.author,
-        coverImage: blog.coverImage,
-        date: blog.publishedAt.toISOString(),
-        updatedAt: blog.updatedAt.toISOString(),
-        tags: blog.tags,
-        featured: blog.featured
-      };
-      
-      const content = body.content || currentMarkdown?.content || '';
-      await saveMarkdownContent(slug, markdownData, content);
-    }
-    
-    await blog.save();
     return NextResponse.json(blog);
     
   } catch (error: any) {
@@ -140,8 +90,9 @@ export async function DELETE(
     
     await dbConnect();
     
-    // Find the blog
-    const blog = await Blog.findOne({ slug });
+    // Find and delete blog
+    const blog = await Blog.findOneAndDelete({ slug });
+    
     if (!blog) {
       return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
     }
@@ -149,13 +100,7 @@ export async function DELETE(
     // Delete associated comments
     await Comment.deleteMany({ blog: blog._id });
     
-    // Delete the blog from database
-    await blog.deleteOne();
-    
-    // Delete the markdown file
-    await deleteMarkdownContent(slug);
-    
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ message: 'Blog deleted successfully' });
     
   } catch (error: any) {
     console.error('Error deleting blog:', error);
