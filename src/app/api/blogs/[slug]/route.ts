@@ -4,11 +4,13 @@ import Blog from '@/models/Blog';
 import Comment from '@/models/Comment';
 import { z } from 'zod';
 
+// Values are trimmed before the length checks so whitespace-only input is
+// rejected here instead of reaching Mongoose as an empty (required) field.
 const updateBlogSchema = z.object({
-  title: z.string().min(3).optional(),
-  excerpt: z.string().min(10).optional(),
-  content: z.string().min(50).optional(),
-  author: z.string().min(2).optional(),
+  title: z.string().trim().min(3, 'Title must be at least 3 characters').optional(),
+  excerpt: z.string().trim().min(10, 'Excerpt must be at least 10 characters').optional(),
+  content: z.string().trim().min(50, 'Content must be at least 50 characters').optional(),
+  author: z.string().trim().min(2, 'Author must be at least 2 characters').optional(),
   tags: z.array(z.string()).optional(),
   coverImage: z.string().optional(),
   images: z.array(z.string()).optional(),
@@ -54,7 +56,19 @@ export async function PATCH(
     const body = await request.json();
     
     // Validate request body
-    const validatedData = updateBlogSchema.parse(body);
+    const validation = updateBlogSchema.safeParse(body);
+    
+    if (!validation.success) {
+      return NextResponse.json(
+        {
+          error: 'Blog validation failed. Please fix the errors below and try again.',
+          details: validation.error.flatten().fieldErrors
+        },
+        { status: 400 }
+      );
+    }
+    
+    const validatedData = validation.data;
     
     await dbConnect();
     
@@ -65,7 +79,7 @@ export async function PATCH(
         ...validatedData,
         updatedAt: new Date()
       },
-      { new: true }
+      { new: true, runValidators: true }
     );
     
     if (!blog) {
@@ -76,7 +90,15 @@ export async function PATCH(
     
   } catch (error: any) {
     console.error('Error updating blog:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    
+    if (error?.name === 'ValidationError') {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    
+    return NextResponse.json(
+      { error: 'Failed to update blog. Please try again.' },
+      { status: 500 }
+    );
   }
 }
 
@@ -106,4 +128,4 @@ export async function DELETE(
     console.error('Error deleting blog:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-} 
+}

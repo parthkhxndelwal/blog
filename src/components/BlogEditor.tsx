@@ -63,6 +63,7 @@ export default function BlogEditor({ initialData = {}, mode }: BlogEditorProps) 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<any>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState<string | null>(null);
   
   // Generate slug from title
@@ -76,6 +77,18 @@ export default function BlogEditor({ initialData = {}, mode }: BlogEditorProps) 
       setSlug(generatedSlug);
     }
   }, [title, slug, mode]);
+  
+  const clearFieldError = (field: string) => {
+    setFieldErrors((prev) => {
+      if (!prev[field]) {
+        return prev;
+      }
+      
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
   
   // Use memoized options to prevent re-renders
   const editorOptions = useMemo(() => {
@@ -100,10 +113,41 @@ export default function BlogEditor({ initialData = {}, mode }: BlogEditorProps) 
   
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    
+    const trimmedTitle = title.trim();
+    const trimmedExcerpt = excerpt.trim();
+    const trimmedContent = content.trim();
+    const trimmedAuthor = author.trim();
+    
     setError(null);
     setErrorDetails(null);
     setSuccess(null);
+    
+    // Validate on the client first so users get precise, friendly feedback
+    // instead of a server-side "Blog validation failed" error.
+    const nextFieldErrors: Record<string, string> = {};
+    
+    if (trimmedTitle.length < 3) {
+      nextFieldErrors.title = 'Title must be at least 3 characters.';
+    }
+    if (trimmedExcerpt.length < 10) {
+      nextFieldErrors.excerpt = 'Excerpt must be at least 10 characters.';
+    }
+    if (trimmedContent.length < 50) {
+      nextFieldErrors.content = 'Content must be at least 50 characters.';
+    }
+    if (trimmedAuthor.length < 2) {
+      nextFieldErrors.author = 'Author must be at least 2 characters.';
+    }
+    
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError('Please fix the highlighted fields and try again.');
+      return;
+    }
+    
+    setFieldErrors({});
+    setIsSubmitting(true);
     
     try {
       const tagsArray = tags
@@ -112,10 +156,10 @@ export default function BlogEditor({ initialData = {}, mode }: BlogEditorProps) 
         .filter(tag => tag !== '');
       
       const blogData = {
-        title,
-        excerpt,
-        content,
-        author,
+        title: trimmedTitle,
+        excerpt: trimmedExcerpt,
+        content: trimmedContent,
+        author: trimmedAuthor,
         coverImage,
         tags: tagsArray,
         featured
@@ -185,11 +229,21 @@ export default function BlogEditor({ initialData = {}, mode }: BlogEditorProps) 
                 {error}
                 {errorDetails && (
                   <ul className="mt-2 list-disc pl-5 space-y-1">
-                    {Object.keys(errorDetails).map(field => (
-                      <li key={field}>
-                        {field}: {errorDetails[field]?._errors?.join(', ')}
-                      </li>
-                    ))}
+                    {Object.entries(errorDetails).map(([field, value]) => {
+                      const messages = Array.isArray(value)
+                        ? value
+                        : (value as { _errors?: string[] } | null)?._errors;
+
+                      if (!Array.isArray(messages) || messages.length === 0) {
+                        return null;
+                      }
+
+                      return (
+                        <li key={field}>
+                          {field}: {messages.join(', ')}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </AlertDescription>
@@ -204,17 +258,24 @@ export default function BlogEditor({ initialData = {}, mode }: BlogEditorProps) 
             </Alert>
           )}
           
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="title">Title * (min 3 characters)</Label>
                 <Input
                   id="title"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    clearFieldError('title');
+                  }}
                   required
                   disabled={isSubmitting}
+                  aria-invalid={!!fieldErrors.title}
                 />
+                {fieldErrors.title && (
+                  <p className="text-sm font-medium text-destructive">{fieldErrors.title}</p>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -238,11 +299,18 @@ export default function BlogEditor({ initialData = {}, mode }: BlogEditorProps) 
               <Textarea
                 id="excerpt"
                 value={excerpt}
-                onChange={(e) => setExcerpt(e.target.value)}
+                onChange={(e) => {
+                  setExcerpt(e.target.value);
+                  clearFieldError('excerpt');
+                }}
                 required
                 disabled={isSubmitting}
                 rows={3}
+                aria-invalid={!!fieldErrors.excerpt}
               />
+              {fieldErrors.excerpt && (
+                <p className="text-sm font-medium text-destructive">{fieldErrors.excerpt}</p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -250,10 +318,16 @@ export default function BlogEditor({ initialData = {}, mode }: BlogEditorProps) 
               <div className="border rounded-md">
                 <SimpleMDE
                   value={content}
-                  onChange={setContent}
+                  onChange={(value) => {
+                    setContent(value);
+                    clearFieldError('content');
+                  }}
                   options={editorOptions}
                 />
               </div>
+              {fieldErrors.content && (
+                <p className="text-sm font-medium text-destructive">{fieldErrors.content}</p>
+              )}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -262,10 +336,17 @@ export default function BlogEditor({ initialData = {}, mode }: BlogEditorProps) 
                 <Input
                   id="author"
                   value={author}
-                  onChange={(e) => setAuthor(e.target.value)}
+                  onChange={(e) => {
+                    setAuthor(e.target.value);
+                    clearFieldError('author');
+                  }}
                   required
                   disabled={isSubmitting}
+                  aria-invalid={!!fieldErrors.author}
                 />
+                {fieldErrors.author && (
+                  <p className="text-sm font-medium text-destructive">{fieldErrors.author}</p>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -316,4 +397,4 @@ export default function BlogEditor({ initialData = {}, mode }: BlogEditorProps) 
       </CardContent>
     </Card>
   );
-} 
+}
